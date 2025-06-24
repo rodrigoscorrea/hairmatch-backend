@@ -149,8 +149,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS').split(" ")
 
-CORS_ALLOWED_ORIGINS = (os.environ.get('BACKEND_ALLOWED_CORS').split(" ")).append(f'{BACKEND_ALLOWED_CORS }')
-CSRF_TRUSTED_ORIGINS = (os.environ.get('BACKEND_ALLOWED_CORS').split(" ")).append(f'{BACKEND_ALLOWED_CORS }')
+CORS_ALLOWED_ORIGINS = list(f'{BACKEND_ALLOWED_CORS }').append(os.environ.get('BACKEND_ALLOWED_CORS').split(" "))
+CSRF_TRUSTED_ORIGINS = list(f'{BACKEND_ALLOWED_CORS }').append(os.environ.get('BACKEND_ALLOWED_CORS').split(" "))
 CORS_ALLOW_CREDENTIALS=True
 AUTH_USER_MODEL = 'users.User'
 

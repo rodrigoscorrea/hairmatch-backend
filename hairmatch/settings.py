@@ -149,8 +149,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS').split(" ")
 
-CORS_ALLOWED_ORIGINS = list(f'{BACKEND_ALLOWED_CORS }').append(os.environ.get('BACKEND_ALLOWED_CORS').split(" "))
-CSRF_TRUSTED_ORIGINS = list(f'{BACKEND_ALLOWED_CORS }').append(os.environ.get('BACKEND_ALLOWED_CORS').split(" "))
+allowed_origins_str = os.environ.get('BACKEND_ALLOWED_CORS', '')
+
+# Split the string into a list. The list comprehension filters out any empty strings
+# that might result from extra spaces or an initially empty environment variable.
+allowed_origins_list = [origin for origin in allowed_origins_str.split(' ') if origin]
+
+# Assign the clean list to your Django settings.
+# Both settings can share the same list object.
+CORS_ALLOWED_ORIGINS = allowed_origins_list
+CSRF_TRUSTED_ORIGINS = allowed_origins_list
+
 CORS_ALLOW_CREDENTIALS=True
 AUTH_USER_MODEL = 'users.User'
 

@@ -376,7 +376,7 @@ class CustomerHomeView(APIView):
                 hairdressers_users = User.objects.filter(
                     role='hairdresser',
                     preferences=preference
-                ).distinct()[:10]
+                ).distinct()[:25]
                 
                 hairdressers_per_preference = Hairdresser.objects.filter(user__in=hairdressers_users)
                 hairdressers_data = HairdresserSerializer(hairdressers_per_preference, many=True).data

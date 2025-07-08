@@ -10,6 +10,7 @@ from .models import User, Customer, Hairdresser
 from preferences.models import Preferences
 from service.models import Service
 from unittest.mock import patch
+from django.core.files.uploadedfile import SimpleUploadedFile
 
 class RegisterViewTest(TestCase):
     def setUp(self):
@@ -31,7 +32,7 @@ class RegisterViewTest(TestCase):
             'role': 'customer',
             'rating': 5,
             'cpf': '12345678900',
-            'preferences': []  # Add empty preferences list
+            'preferences': json.dumps([])  # Add empty preferences list
         }
         self.valid_hairdresser_payload = {
             'first_name': 'Jane',
@@ -51,7 +52,7 @@ class RegisterViewTest(TestCase):
             'resume': 'Experienced hairdresser',
             'cnpj': '12345678000190',
             'experience_years': 5,
-            'preferences': [],  # Add empty preferences list
+            'preferences': json.dumps([]),  # Add empty preferences list
             'experience_time':'experience_time',
             'experiences':'experiences',
             'products':'products',
@@ -61,8 +62,7 @@ class RegisterViewTest(TestCase):
     def test_register_customer_valid(self):
         response = self.client.post(
             self.register_url,
-            data=json.dumps(self.valid_customer_payload),
-            content_type='application/json'
+            data=(self.valid_customer_payload),
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.count(), 1)
@@ -73,8 +73,7 @@ class RegisterViewTest(TestCase):
     def test_register_hairdresser_valid(self):
         response = self.client.post(
             self.register_url,
-            data=json.dumps(self.valid_hairdresser_payload),
-            content_type='application/json'
+            data=self.valid_hairdresser_payload,
         )
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.count(), 1)
@@ -86,17 +85,30 @@ class RegisterViewTest(TestCase):
         # First registration
         self.client.post(
             self.register_url,
-            data=json.dumps(self.valid_customer_payload),
-            content_type='application/json'
+            data=self.valid_customer_payload,
         )
         
         # Duplicate registration attempt
         response = self.client.post(
             self.register_url,
-            data=json.dumps(self.valid_customer_payload),
-            content_type='application/json'
+            data=self.valid_customer_payload,
         )
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
+        self.assertEqual(User.objects.count(), 1)  # No new user created
+
+    def test_register_duplicate_phone(self):
+        # First registration
+        self.client.post(
+            self.register_url,
+            data=self.valid_customer_payload,
+        )
+        
+        # Duplicate registration attempt
+        response = self.client.post(
+            self.register_url,
+            data=self.valid_customer_payload,
+        )
+        self.assertEqual(response.status_code, status.HTTP_409_CONFLICT)
         self.assertEqual(User.objects.count(), 1)  # No new user created
 
     def test_register_missing_role(self):
@@ -105,8 +117,7 @@ class RegisterViewTest(TestCase):
         
         response = self.client.post(
             self.register_url,
-            data=json.dumps(invalid_payload),
-            content_type='application/json'
+            data=invalid_payload,
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(User.objects.count(), 0)
@@ -117,8 +128,7 @@ class RegisterViewTest(TestCase):
         
         response = self.client.post(
             self.register_url,
-            data=json.dumps(invalid_payload),
-            content_type='application/json'
+            data=invalid_payload,
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(User.objects.count(), 0)
@@ -129,8 +139,7 @@ class RegisterViewTest(TestCase):
         
         response = self.client.post(
             self.register_url,
-            data=json.dumps(invalid_payload),
-            content_type='application/json'
+            data=invalid_payload,
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(User.objects.count(), 0)
@@ -141,8 +150,7 @@ class RegisterViewTest(TestCase):
         
         response = self.client.post(
             self.register_url,
-            data=json.dumps(invalid_payload),
-            content_type='application/json'
+            data=invalid_payload,
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(User.objects.count(), 0)
@@ -153,8 +161,7 @@ class RegisterViewTest(TestCase):
         
         response = self.client.post(
             self.register_url,
-            data=json.dumps(invalid_payload),
-            content_type='application/json'
+            data=invalid_payload,
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertEqual(User.objects.count(), 0)
@@ -166,12 +173,11 @@ class RegisterViewTest(TestCase):
         
         # Add preference IDs to payload
         payload_with_prefs = self.valid_customer_payload.copy()
-        payload_with_prefs['preferences'] = [pref1.id, pref2.id]
+        payload_with_prefs['preferences'] = json.dumps([pref1.id, pref2.id])
         
         response = self.client.post(
             self.register_url,
-            data=json.dumps(payload_with_prefs),
-            content_type='application/json'
+            data=payload_with_prefs,
         )
         
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -182,6 +188,19 @@ class RegisterViewTest(TestCase):
         self.assertEqual(user.preferences.count(), 2)
         self.assertIn(pref1, user.preferences.all())
         self.assertIn(pref2, user.preferences.all())
+
+    def test_register_with_profile_picture(self):
+        """Test user registration with a profile picture."""
+        # Create a dummy image file
+        image = SimpleUploadedFile("profile.jpg", b"file_content", content_type="image/jpeg")
+        payload = self.valid_customer_payload.copy()
+        payload['profile_picture'] = image
+
+        response = self.client.post(self.register_url, data=payload)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(User.objects.count(), 1)
+        user = User.objects.get(email='john@example.com')
+        self.assertTrue(user.profile_picture)
 
 
 class LoginViewTest(TestCase):
@@ -205,14 +224,13 @@ class LoginViewTest(TestCase):
             'role': 'customer',
             'rating': 5,
             'cpf': '12345678900',
-            'preferences': []
+            'preferences': json.dumps([])
         }
         
         # Register user for login tests
         self.client.post(
             self.register_url,
-            data=json.dumps(self.user_data),
-            content_type='application/json'
+            data=self.user_data,
         )
 
     def test_login_valid(self):
@@ -334,14 +352,13 @@ class ChangePasswordViewTest(TestCase):
             'role': 'customer',
             'rating': 5,
             'cpf': '12345678900',
-            'preferences': []
+            'preferences': json.dumps([])
         }
         
         # Register user
         self.client.post(
             self.register_url,
-            data=json.dumps(self.user_data),
-            content_type='application/json'
+            data=self.user_data,
         )
         
         # Login to get token
@@ -453,7 +470,7 @@ class UserInfoCookieViewTest(TestCase):
             'role': 'customer',
             'rating': 5,
             'cpf': '12345678900',
-            'preferences': []
+            'preferences': json.dumps([])
         }
         
         # Create hairdresser user
@@ -475,7 +492,7 @@ class UserInfoCookieViewTest(TestCase):
             'resume': 'Professional hairdresser',
             'cnpj': '12345678000190',
             'experience_years': 7,
-            'preferences': [],
+            'preferences': json.dumps([]),
             'experience_time':'experience_time',
             'experiences':'experiences',
             'products':'products',
@@ -485,14 +502,12 @@ class UserInfoCookieViewTest(TestCase):
         # Register users
         self.client.post(
             self.register_url,
-            data=json.dumps(self.customer_data),
-            content_type='application/json'
+            data=self.customer_data,
         )
         
         self.client.post(
             self.register_url,
-            data=json.dumps(self.hairdresser_data),
-            content_type='application/json'
+            data=self.hairdresser_data,
         )
         
         # Helper method to login and get token
@@ -659,7 +674,7 @@ class UserInfoViewTest(TestCase):
             'role': 'customer',
             'rating': 5,
             'cpf': '12345678900',
-            'preferences': []
+            'preferences': json.dumps([])
         }
         
         self.hairdresser_data = {
@@ -680,7 +695,7 @@ class UserInfoViewTest(TestCase):
             'resume': 'Professional hairdresser',
             'cnpj': '12345678000190',
             'experience_years': 7,
-            'preferences': [],
+            'preferences': json.dumps([]),
             'experience_time':'experience_time',
             'experiences':'experiences',
             'products':'products',
@@ -690,14 +705,12 @@ class UserInfoViewTest(TestCase):
         # Register users
         self.client.post(
             self.register_url,
-            data=json.dumps(self.customer_data),
-            content_type='application/json'
+            data=self.customer_data,
         )
         
         self.client.post(
             self.register_url,
-            data=json.dumps(self.hairdresser_data),
-            content_type='application/json'
+            data=self.hairdresser_data,
         )
 
     def test_get_customer_info_by_email(self):
@@ -773,7 +786,7 @@ class CustomerHomeViewTest(TestCase):
             'role': 'customer',
             'rating': 5,
             'cpf': '12345678900',
-            'preferences': []
+            'preferences': json.dumps([])
         }
         
         # Create hairdresser users for testing
@@ -795,7 +808,7 @@ class CustomerHomeViewTest(TestCase):
             'resume': 'Professional hairdresser 1',
             'cnpj': '12345678000191',
             'experience_years': 7,
-            'preferences': [],
+            'preferences': json.dumps([]),
             'experience_time': 'experience_time',
             'experiences': 'experiences',
             'products': 'products'
@@ -819,7 +832,7 @@ class CustomerHomeViewTest(TestCase):
             'resume': 'Professional hairdresser 2',
             'cnpj': '12345678000192',
             'experience_years': 5,
-            'preferences': [],
+            'preferences': json.dumps([]),
             'experience_time': 'experience_time',
             'experiences': 'experiences',
             'products': 'products'
@@ -828,20 +841,17 @@ class CustomerHomeViewTest(TestCase):
         # Register users
         self.client.post(
             self.register_url,
-            data=json.dumps(self.customer_data),
-            content_type='application/json'
+            data=self.customer_data,
         )
         
         self.client.post(
             self.register_url,
-            data=json.dumps(self.hairdresser_data_1),
-            content_type='application/json'
+            data=self.hairdresser_data_1,
         )
         
         self.client.post(
             self.register_url,
-            data=json.dumps(self.hairdresser_data_2),
-            content_type='application/json'
+            data=self.hairdresser_data_2,
         )
         
         # Get created users and add preferences
@@ -951,13 +961,12 @@ class CustomerHomeViewTest(TestCase):
             'role': 'customer',
             'rating': 5,
             'cpf': '12345678901',
-            'preferences': []
+            'preferences': json.dumps([])
         }
         
         self.client.post(
             self.register_url,
-            data=json.dumps(customer_no_match),
-            content_type='application/json'
+            data=customer_no_match,
         )
         
         # Add a preference that no hairdresser has
@@ -995,13 +1004,12 @@ class CustomerHomeViewTest(TestCase):
             'role': 'customer',
             'rating': 5,
             'cpf': '12345678902',
-            'preferences': []
+            'preferences': json.dumps([])
         }
         
         self.client.post(
             self.register_url,
-            data=json.dumps(customer_empty),
-            content_type='application/json'
+            data=customer_empty,
         )
         
         url = reverse('customer_home_info', kwargs={'email': 'empty@example.com'})

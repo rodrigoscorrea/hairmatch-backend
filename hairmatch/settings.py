@@ -25,10 +25,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = True
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = '/var/data/media'
+MEDIA_ROOT = os.getenv('MEDIA_ROOT')
 BACKEND_ALLOWED_HOST = os.getenv('BACKEND_ALLOWED_HOST')
 BACKEND_ALLOWED_CORS = os.getenv('BACKEND_ALLOWED_CORS')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')

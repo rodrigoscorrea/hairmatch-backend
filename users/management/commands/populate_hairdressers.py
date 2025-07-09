@@ -147,7 +147,7 @@ class Command(BaseCommand):
         weekdays = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
 
         # Define the base path for profile pictures
-        profile_pics_dir = os.path.join('media', 'profile_pics')
+        profile_pics_dir = os.path.join(settings.BASE_DIR, 'media', 'profile_pics')
         
         # Check if the directory exists to prevent errors
         if not os.path.isdir(profile_pics_dir):

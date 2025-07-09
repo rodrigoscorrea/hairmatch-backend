@@ -28,7 +28,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY')
 DEBUG = False
 
 MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+MEDIA_ROOT = '/var/data/media'
 BACKEND_ALLOWED_HOST = os.getenv('BACKEND_ALLOWED_HOST')
 BACKEND_ALLOWED_CORS = os.getenv('BACKEND_ALLOWED_CORS')
 GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')

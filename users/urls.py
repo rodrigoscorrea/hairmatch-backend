@@ -9,7 +9,8 @@ from .views import (
     ChangePasswordView, 
     CustomerHomeView, 
     HairdresserInfoView,
-    GeminiChatView
+    GeminiChatView,
+    debug_media_settings
 )
 
 urlpatterns = [
@@ -25,4 +26,5 @@ urlpatterns = [
     path('customer/home/<str:email>', CustomerHomeView.as_view(), name='customer_home_info'),
     path('hairdresser/<int:hairdresser_id>', HairdresserInfoView.as_view(), name='hairdresser_info'),
     path('hairdresser/gemini_completion', GeminiChatView.as_view(), name='gemini_completion'),
+    path('debug-media/', debug_media_settings, name='debug-media'),
 ]

@@ -427,3 +427,41 @@ class HairdresserInfoView(APIView):
 
         hairdresser_serialized = HairdresserSerializer(hairdresser).data
         return JsonResponse({'data': hairdresser_serialized}, status=200)
+    
+from django.conf import settings
+from django.http import JsonResponse
+import os
+import logging
+
+# Get a logger instance
+logger = logging.getLogger(__name__)
+
+def debug_media_settings(request):
+    """
+    A view to log and display media settings for debugging purposes.
+    """
+    media_root = settings.MEDIA_ROOT
+    media_url = settings.MEDIA_URL
+    
+    path_exists = os.path.exists(media_root)
+    dir_contents = []
+    
+    if path_exists:
+        try:
+            # List contents of the media root
+            dir_contents = os.listdir(media_root)
+        except Exception as e:
+            dir_contents = [f"Error reading directory: {e}"]
+            
+    # Log the information to the console
+    logger.info(f"DEBUGGING MEDIA_ROOT: '{media_root}'")
+    logger.info(f"DEBUGGING MEDIA_ROOT EXISTS: {path_exists}")
+    logger.info(f"DEBUGGING MEDIA_ROOT CONTENTS: {dir_contents}")
+
+    # Return the data as a JSON response to see it in the browser too
+    return JsonResponse({
+        'media_root': media_root,
+        'media_url': media_url,
+        'media_root_exists': path_exists,
+        'media_root_contents': dir_contents
+    })
